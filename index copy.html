@@ -1,82 +1,453 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rock Paper Scissors</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: linear-gradient(to bottom, #87CEEB, #ffffff);
-            margin: 0;
-            padding: 0;
-        }
-        h1 {
-            margin-top: 20px;
-            color: #333;
-        }
-        .choices {
-            margin: 20px 0;
-        }
-        .choices button {
-            padding: 10px 20px;
-            font-size: 16px;
-            margin: 10px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            background-color: #4CAF50;
-            color: white;
-            transition: background-color 0.3s;
-        }
-        .choices button:hover {
-            background-color: #45a049;
-        }
-        .result {
-            margin-top: 20px;
-            font-size: 18px;
-            color: #333;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✈ 비행기 시뮬레이터</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; overflow:hidden; font-family:'Share Tech Mono',monospace; color:#fff; cursor:default; }
+  canvas { display:block; width:100vw; height:100vh; }
+
+  #hud {
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    pointer-events:none; z-index:10;
+  }
+  .hud-top {
+    position:absolute; top:16px; left:50%;
+    transform:translateX(-50%);
+    display:flex; gap:24px; align-items:center;
+  }
+  .hud-stat {
+    text-align:center;
+    border:1px solid rgba(255,255,255,0.25);
+    padding:6px 16px;
+    background:rgba(0,20,60,0.55);
+    border-radius:6px;
+    backdrop-filter:blur(4px);
+  }
+  .hud-stat .label { font-size:9px; color:rgba(180,210,255,0.7); letter-spacing:2px; text-transform:uppercase; }
+  .hud-stat .value { font-family:'Orbitron',monospace; font-size:20px; font-weight:700; color:#a0d8ff; }
+
+  #warning {
+    position:absolute; top:45%; left:50%; transform:translate(-50%,-50%);
+    font-family:'Orbitron',monospace; font-size:26px; font-weight:900;
+    color:#ff4422; text-shadow:0 0 20px #ff4422;
+    letter-spacing:4px; display:none; animation:blink .5s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  #controls-hint {
+    position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+    display:flex; gap:14px;
+    background:rgba(0,20,60,0.6); border:1px solid rgba(255,255,255,0.15);
+    padding:10px 22px; border-radius:6px; font-size:11px; color:rgba(180,210,255,0.7);
+    letter-spacing:1px; backdrop-filter:blur(4px);
+  }
+  .key {
+    background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.3);
+    padding:1px 7px; border-radius:3px; color:#fff; font-weight:bold; margin-right:3px;
+  }
+
+  #title-screen {
+    position:fixed; inset:0; background:linear-gradient(160deg,#0a1a40 0%,#1a4a8a 60%,#2a6abf 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    z-index:100; gap:20px;
+  }
+  #title-screen h1 {
+    font-family:'Orbitron',monospace; font-size:52px; font-weight:900;
+    color:#fff; text-shadow:0 0 40px rgba(100,180,255,0.9); letter-spacing:6px;
+    animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100%{text-shadow:0 0 40px rgba(100,180,255,.9),0 0 80px rgba(100,180,255,.4)}
+    50%{text-shadow:0 0 60px rgba(100,180,255,1),0 0 120px rgba(100,180,255,.6)}
+  }
+  #title-screen p { color:rgba(180,210,255,.8); font-size:13px; letter-spacing:2px; }
+  #start-btn {
+    margin-top:16px; font-family:'Orbitron',monospace; font-size:15px; font-weight:700;
+    color:#001030; background:#64b4ff; border:none; padding:14px 44px;
+    letter-spacing:3px; cursor:pointer; border-radius:6px; transition:all .2s;
+  }
+  #start-btn:hover { background:#fff; transform:scale(1.06); box-shadow:0 0 40px rgba(100,180,255,.8); }
+
+  .side-bar-wrap { position:absolute; top:50%; transform:translateY(-50%); }
+  #alt-wrap { right:28px; }
+  #spd-wrap { left:28px; }
+  .side-bar-label {
+    font-size:9px; letter-spacing:2px; color:rgba(180,210,255,.6);
+    text-align:center; margin-bottom:4px;
+  }
+  .side-bar {
+    width:10px; height:180px;
+    border:1px solid rgba(255,255,255,.2);
+    background:rgba(0,20,60,.5); border-radius:5px; overflow:hidden;
+    position:relative;
+  }
+  .side-bar-fill {
+    position:absolute; bottom:0; left:0; right:0;
+    transition:height .1s; border-radius:5px;
+  }
+  #alt-fill { background:linear-gradient(to top,#64b4ff,#64b4ff44); }
+  #spd-fill { background:linear-gradient(to top,#ff9922,#ff992244); }
+</style>
 </head>
 <body>
-    <h1>가위바위보 게임</h1>
-    <div class="choices">
-        <button onclick="playGame('가위')">가위</button>
-        <button onclick="playGame('바위')">바위</button>
-        <button onclick="playGame('보')">보</button>
-    </div>
-    <div class="result">
-        <p id="user-choice">당신의 선택: </p>
-        <p id="computer-choice">컴퓨터의 선택: </p>
-        <p id="game-result">결과: </p>
-    </div>
 
-    <script>
-        function playGame(userChoice) {
-            const choices = ['가위', '바위', '보'];
-            const computerChoice = choices[Math.floor(Math.random() * choices.length)];
+<div id="title-screen">
+  <div style="font-size:80px;margin-bottom:-10px">✈</div>
+  <h1>FLIGHT SIM</h1>
+  <p>3인칭 시점 · WASD 조종 · SHIFT 가속 · SPACE 감속</p>
+  <button id="start-btn" onclick="startGame()">▶ 비행 시작</button>
+  <p style="margin-top:10px;font-size:10px;color:rgba(180,210,255,.4)">W/S → 상승/하강 &nbsp;|&nbsp; A/D → 좌우 선회</p>
+</div>
 
-            // 결과 계산
-            let result = '';
-            if (userChoice === computerChoice) {
-                result = '무승부!';
-            } else if (
-                (userChoice === '가위' && computerChoice === '보') ||
-                (userChoice === '바위' && computerChoice === '가위') ||
-                (userChoice === '보' && computerChoice === '바위')
-            ) {
-                result = '승리!';
-            } else {
-                result = '패배!';
-            }
+<canvas id="c"></canvas>
 
-            // 결과 표시
-            document.getElementById('user-choice').innerText = `당신의 선택: ${userChoice}`;
-            document.getElementById('computer-choice').innerText = `컴퓨터의 선택: ${computerChoice}`;
-            document.getElementById('game-result').innerText = `결과: ${result}`;
-        }
-    </script>
+<div id="hud">
+  <div class="hud-top">
+    <div class="hud-stat"><div class="label">속도</div><div class="value" id="hspd">0</div></div>
+    <div class="hud-stat"><div class="label">고도</div><div class="value" id="halt">0</div></div>
+    <div class="hud-stat"><div class="label">피치</div><div class="value" id="hpitch">0°</div></div>
+    <div class="hud-stat"><div class="label">롤</div><div class="value" id="hroll">0°</div></div>
+  </div>
+  <div class="side-bar-wrap" id="alt-wrap">
+    <div class="side-bar-label">ALT</div>
+    <div class="side-bar"><div class="side-bar-fill" id="alt-fill"></div></div>
+  </div>
+  <div class="side-bar-wrap" id="spd-wrap">
+    <div class="side-bar-label">SPD</div>
+    <div class="side-bar"><div class="side-bar-fill" id="spd-fill"></div></div>
+  </div>
+  <div id="warning">⚠ 저고도 경고</div>
+</div>
+
+<div id="controls-hint">
+  <span><span class="key">W</span>상승</span>
+  <span><span class="key">S</span>하강</span>
+  <span><span class="key">A</span>좌회전</span>
+  <span><span class="key">D</span>우회전</span>
+  <span><span class="key">Shift</span>가속</span>
+  <span><span class="key">Space</span>감속</span>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+const keys = {};
+window.addEventListener('keydown', e => { keys[e.code]=true; if(e.code==='Space') e.preventDefault(); });
+window.addEventListener('keyup',   e => { keys[e.code]=false; });
+
+const pl = { x:0, y:400, z:0, pitch:0, roll:0, yaw:0, speed:200 };
+let clouds=[], groundTiles=[], mountains=[], time=0, gameRunning=false;
+const trail = [];
+
+function initScene(){
+  clouds = Array.from({length:100},()=>({
+    x:(Math.random()-.5)*18000, y:350+Math.random()*700, z:(Math.random()-.5)*18000,
+    w:180+Math.random()*360, h:55+Math.random()*90, op:0.55+Math.random()*.35
+  }));
+  groundTiles=[];
+  for(let i=-25;i<=25;i++) for(let j=-25;j<=25;j++)
+    groundTiles.push({ gx:i*500, gz:j*500, col:((i+j)%2===0)?'#2d6a2d':'#337a33' });
+  mountains = Array.from({length:70},()=>({
+    x:(Math.random()-.5)*18000, z:(Math.random()-.5)*18000,
+    h:150+Math.random()*700, r:250+Math.random()*600
+  }));
+}
+
+// ── Camera (3rd person, behind & above) ───────────────────────────
+const CAM_DIST=180, CAM_H=60;
+function getCam(){
+  const yr=pl.yaw*Math.PI/180, pr=pl.pitch*Math.PI/180;
+  return {
+    cx: pl.x - Math.sin(yr)*Math.cos(pr)*CAM_DIST,
+    cy: pl.y - Math.sin(pr)*CAM_DIST + CAM_H,
+    cz: pl.z - Math.cos(yr)*Math.cos(pr)*CAM_DIST
+  };
+}
+
+function project(wx,wy,wz){
+  const {cx,cy,cz}=getCam();
+  let dx=wx-cx, dy=wy-cy, dz=wz-cz;
+  const yr=pl.yaw*Math.PI/180;
+  const cosY=Math.cos(yr), sinY=Math.sin(yr);
+  const rx = dx*cosY - dz*sinY;
+  const rza= dx*sinY + dz*cosY;
+  const camP=-0.13+pl.pitch*Math.PI/180*0.12;
+  const cosP=Math.cos(camP), sinP=Math.sin(camP);
+  const ry = dy*cosP - rza*sinP;
+  const rz = dy*sinP + rza*cosP;
+  if(rz<5) return null;
+  const s=520/rz;
+  return {sx:W/2+rx*s, sy:H/2-ry*s, scale:s, dist:rz};
+}
+
+// ── 3D plane model ─────────────────────────────────────────────────
+function cross(a,b){ return {x:a.y*b.z-a.z*b.y, y:a.z*b.x-a.x*b.z, z:a.x*b.y-a.y*b.x}; }
+
+function drawPlane3D(){
+  const yr=pl.yaw*Math.PI/180, pr=pl.pitch*Math.PI/180, rr=pl.roll*Math.PI/180;
+  const fwd={x:Math.sin(yr)*Math.cos(pr), y:Math.sin(pr), z:Math.cos(yr)*Math.cos(pr)};
+  const rb ={x:Math.cos(yr), y:0, z:-Math.sin(yr)};
+  const up0=cross(fwd,rb);
+  const right={
+    x:rb.x*Math.cos(rr)+up0.x*Math.sin(rr),
+    y:rb.y*Math.cos(rr)+up0.y*Math.sin(rr),
+    z:rb.z*Math.cos(rr)+up0.z*Math.sin(rr)
+  };
+  const up={
+    x:-rb.x*Math.sin(rr)+up0.x*Math.cos(rr),
+    y:-rb.y*Math.sin(rr)+up0.y*Math.cos(rr),
+    z:-rb.z*Math.sin(rr)+up0.z*Math.cos(rr)
+  };
+
+  function pt(f,r,u){
+    return {
+      x:pl.x+fwd.x*f+right.x*r+up.x*u,
+      y:pl.y+fwd.y*f+right.y*r+up.y*u,
+      z:pl.z+fwd.z*f+right.z*r+up.z*u
+    };
+  }
+  function pp(v){ return project(v.x,v.y,v.z); }
+
+  function poly(verts,fill,str,lw){
+    const pts=verts.map(pp);
+    if(pts.some(p=>!p)) return;
+    ctx.beginPath(); ctx.moveTo(pts[0].sx,pts[0].sy);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].sx,pts[i].sy);
+    ctx.closePath();
+    if(fill){ctx.fillStyle=fill;ctx.fill();}
+    if(str){ctx.strokeStyle=str;ctx.lineWidth=lw||1;ctx.stroke();}
+  }
+
+  ctx.save();
+
+  // ── Main wings ──
+  poly([pt(6,-5,-1),pt(2,-48,-3),pt(-14,-48,-3),pt(-14,-5,-1)], '#dce8f5','#a0b8cc',0.8);
+  poly([pt(6, 5,-1),pt(2, 48,-3),pt(-14, 48,-3),pt(-14, 5,-1)], '#dce8f5','#a0b8cc',0.8);
+  // wing top sheen
+  poly([pt(6,-5,-1),pt(2,-48,-3),pt(-14,-48,-3),pt(-14,-5,-1)], 'rgba(255,255,255,0.12)',null);
+  poly([pt(6, 5,-1),pt(2, 48,-3),pt(-14, 48,-3),pt(-14, 5,-1)], 'rgba(255,255,255,0.12)',null);
+
+  // ── Fuselage body ──
+  // bottom
+  poly([pt(34,4,-1),pt(-36,4,-1),pt(-36,-4,-1),pt(34,-4,-1)], '#c0d0e0','#90a8c0',0.6);
+  // sides
+  poly([pt(34,4,-1),pt(-36,4,-1),pt(-36,4,4),pt(34,4,3)], '#d8eaf8','#b0c8e0',0.7);
+  poly([pt(34,-4,-1),pt(-36,-4,-1),pt(-36,-4,4),pt(34,-4,3)], '#d8eaf8','#b0c8e0',0.7);
+  // top
+  poly([pt(34,4,3),pt(-36,4,4),pt(-36,-4,4),pt(34,-4,3)], '#eef4ff','#c8daf0',0.6);
+  // nose cone
+  poly([pt(34,4,-1),pt(34,-4,-1),pt(34,-4,3),pt(34,4,3)], '#e8f2ff','#c0d4f0',0.8);
+  // tail
+  poly([pt(-36,4,-1),pt(-36,-4,-1),pt(-36,-4,4),pt(-36,4,4)], '#c8d8ec','#a0b8d0',0.8);
+
+  // ── Cockpit windows ──
+  poly([pt(28,-4,3),pt(28,4,3),pt(18,4,5),pt(18,-4,5)], '#3a88cc','#2266aa',1.2);
+  poly([pt(28,-4,3),pt(28,4,3),pt(18,4,5),pt(18,-4,5)], 'rgba(120,200,255,0.25)',null);
+
+  // ── Red livery stripe ──
+  poly([pt(22,4.1,0),pt(-28,4.1,0.5),pt(-28,4.1,1.8),pt(22,4.1,1.5)], '#dd2200',null);
+  poly([pt(22,-4.1,0),pt(-28,-4.1,0.5),pt(-28,-4.1,1.8),pt(22,-4.1,1.5)], '#dd2200',null);
+
+  // ── Engine pods ──
+  poly([pt(10,-20,-3),pt(-8,-20,-3),pt(-8,-24,-3),pt(10,-24,-3)], '#778899','#556677',0.8);
+  poly([pt(10,-20,-3),pt(-8,-20,-3),pt(-8,-20,-1),pt(10,-20,-1)], '#8899aa',null);
+  poly([pt(10, 20,-3),pt(-8, 20,-3),pt(-8, 24,-3),pt(10, 24,-3)], '#778899','#556677',0.8);
+  poly([pt(10, 20,-3),pt(-8, 20,-3),pt(-8, 20,-1),pt(10, 20,-1)], '#8899aa',null);
+
+  // engine intakes
+  const ei1=pp(pt(10,-22,-3.5)), ei2=pp(pt(10,22,-3.5));
+  [ei1,ei2].forEach(p=>{
+    if(!p) return;
+    const r=Math.max(2,5*p.scale);
+    ctx.beginPath(); ctx.arc(p.sx,p.sy,r,0,Math.PI*2);
+    ctx.fillStyle='#223344'; ctx.fill();
+    ctx.strokeStyle='#667788'; ctx.lineWidth=0.8; ctx.stroke();
+  });
+
+  // ── Horizontal stabilizers ──
+  poly([pt(-28,-4,4),pt(-34,-22,4),pt(-37,-22,4),pt(-37,-4,4)], '#ccd8e8','#a0b8cc',0.7);
+  poly([pt(-28, 4,4),pt(-34, 22,4),pt(-37, 22,4),pt(-37, 4,4)], '#ccd8e8','#a0b8cc',0.7);
+
+  // ── Vertical stabilizer ──
+  poly([pt(-24,0,4),pt(-30,0,20),pt(-37,0,20),pt(-37,0,4)], '#c0d0e0','#a0b8cc',0.7);
+  // fin stripe
+  poly([pt(-24,0.3,5),pt(-30,0.3,19),pt(-37,0.3,19),pt(-37,0.3,5)], '#dd2200',null);
+
+  ctx.restore();
+}
+
+// ── Contrail ───────────────────────────────────────────────────────
+function updateTrail(){
+  const yr=pl.yaw*Math.PI/180, pr=pl.pitch*Math.PI/180, rr=pl.roll*Math.PI/180;
+  const fwd={x:Math.sin(yr)*Math.cos(pr), y:Math.sin(pr), z:Math.cos(yr)*Math.cos(pr)};
+  const rb={x:Math.cos(yr),y:0,z:-Math.sin(yr)};
+  const up0=cross(fwd,rb);
+  const right={
+    x:rb.x*Math.cos(rr)+up0.x*Math.sin(rr),
+    y:rb.y*Math.cos(rr)+up0.y*Math.sin(rr),
+    z:rb.z*Math.cos(rr)+up0.z*Math.sin(rr)
+  };
+  [-22,22].forEach(offs=>{
+    trail.push({
+      x:pl.x+fwd.x*(-14)+right.x*offs,
+      y:pl.y+fwd.y*(-14)+right.y*offs-3,
+      z:pl.z+fwd.z*(-14)+right.z*offs,
+      life:1
+    });
+  });
+  for(let i=trail.length-1;i>=0;i--){ trail[i].life-=0.010; if(trail[i].life<=0) trail.splice(i,1); }
+  trail.forEach(t=>{
+    const p=project(t.x,t.y,t.z);
+    if(!p) return;
+    const r=Math.max(1,5*p.scale*t.life);
+    ctx.globalAlpha=t.life*0.3;
+    ctx.fillStyle='#d0eaff';
+    ctx.beginPath(); ctx.arc(p.sx,p.sy,r,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+  });
+}
+
+// ── Scene render ───────────────────────────────────────────────────
+function lerpHex(a,b,t){
+  const ah=parseInt(a.slice(1),16), bh=parseInt(b.slice(1),16);
+  const ar=(ah>>16)&255,ag=(ah>>8)&255,ab=ah&255;
+  const br=(bh>>16)&255,bg=(bh>>8)&255,bb=bh&255;
+  return '#'+(Math.round(ar+(br-ar)*t)<<16|Math.round(ag+(bg-ag)*t)<<8|Math.round(ab+(bb-ab)*t)).toString(16).padStart(6,'0');
+}
+
+function drawScene(){
+  // Blue sky
+  const altT=Math.max(0,Math.min(1,pl.y/3000));
+  const grd=ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0, lerpHex('#1462b8','#0a3070',altT));
+  grd.addColorStop(1, lerpHex('#55aaff','#2a7ad4',altT));
+  ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+
+  // Sun glow
+  const sp=project(pl.x+3000,pl.y+2000,pl.z+8000);
+  if(sp&&sp.sx>-100&&sp.sx<W+100&&sp.sy>-100&&sp.sy<H+100){
+    const sg=ctx.createRadialGradient(sp.sx,sp.sy,0,sp.sx,sp.sy,100);
+    sg.addColorStop(0,'rgba(255,255,180,0.85)');
+    sg.addColorStop(0.25,'rgba(255,220,80,0.35)');
+    sg.addColorStop(1,'rgba(255,200,40,0)');
+    ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(sp.sx,sp.sy,100,0,Math.PI*2); ctx.fill();
+  }
+
+  // Ground
+  groundTiles.forEach(t=>{
+    const cs=[
+      project(t.gx,0,t.gz), project(t.gx+500,0,t.gz),
+      project(t.gx+500,0,t.gz+500), project(t.gx,0,t.gz+500)
+    ];
+    if(cs.some(c=>!c)) return;
+    const d=cs.reduce((s,c)=>s+c.dist,0)/4;
+    if(d>9000) return;
+    const fog=Math.max(0,1-d/7000);
+    ctx.beginPath(); ctx.moveTo(cs[0].sx,cs[0].sy);
+    cs.slice(1).forEach(c=>ctx.lineTo(c.sx,c.sy)); ctx.closePath();
+    ctx.globalAlpha=0.2+fog*0.8; ctx.fillStyle=t.col; ctx.fill();
+    ctx.strokeStyle='rgba(0,100,0,0.2)'; ctx.lineWidth=0.5; ctx.stroke();
+    ctx.globalAlpha=1;
+  });
+
+  // Mountains
+  mountains.forEach(m=>{
+    const tip=project(m.x,m.h,m.z);
+    const bl =project(m.x-m.r,0,m.z);
+    const br =project(m.x+m.r,0,m.z);
+    if(!tip||!bl||!br||tip.dist>11000) return;
+    const fog=Math.max(0,1-tip.dist/10000);
+    ctx.beginPath(); ctx.moveTo(tip.sx,tip.sy); ctx.lineTo(bl.sx,bl.sy); ctx.lineTo(br.sx,br.sy); ctx.closePath();
+    const mg=ctx.createLinearGradient(tip.sx,tip.sy,tip.sx,bl.sy);
+    mg.addColorStop(0,'#eef4ff'); mg.addColorStop(0.25,'#4a7a4a'); mg.addColorStop(1,'#2e5e2e');
+    ctx.globalAlpha=0.3+fog*0.6; ctx.fillStyle=mg; ctx.fill();
+    ctx.strokeStyle='rgba(200,230,200,0.25)'; ctx.lineWidth=0.8; ctx.stroke();
+    ctx.globalAlpha=1;
+  });
+
+  // Clouds
+  clouds.forEach(c=>{
+    const p=project(c.x,c.y,c.z);
+    if(!p||p.sx<-700||p.sx>W+700||p.sy<-250||p.sy>H+250||p.dist>13000) return;
+    const cw=c.w*p.scale, ch=c.h*p.scale;
+    const fog=Math.max(0,1-p.dist/12000);
+    ctx.globalAlpha=c.op*(0.35+fog*0.65);
+    for(let i=0;i<6;i++){
+      const bx=p.sx+(i-2.5)*cw*0.22;
+      const by=p.sy+Math.sin(i*1.2)*ch*0.3;
+      const br=Math.max(3,cw*0.27+Math.sin(i*.9)*cw*0.1);
+      ctx.fillStyle='rgba(255,255,255,0.92)';
+      ctx.beginPath(); ctx.arc(bx,by,br,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  });
+
+  updateTrail();
+  drawPlane3D();
+}
+
+// ── Physics ────────────────────────────────────────────────────────
+function updatePhysics(dt){
+  const maxP=55,maxR=70,pitchRate=38,rollRate=48,minS=80,maxS=450;
+  if(keys['KeyW']||keys['ArrowUp'])    pl.pitch=Math.min(pl.pitch+pitchRate*dt,maxP);
+  if(keys['KeyS']||keys['ArrowDown'])  pl.pitch=Math.max(pl.pitch-pitchRate*dt,-maxP);
+  if(keys['KeyA']||keys['ArrowLeft'])  pl.roll =Math.max(pl.roll -rollRate*dt,-maxR);
+  if(keys['KeyD']||keys['ArrowRight']) pl.roll =Math.min(pl.roll +rollRate*dt, maxR);
+  if(keys['ShiftLeft']||keys['ShiftRight']) pl.speed=Math.min(pl.speed+80*dt,maxS);
+  if(keys['Space']) pl.speed=Math.max(pl.speed-60*dt,minS);
+  if(!keys['KeyA']&&!keys['KeyD']&&!keys['ArrowLeft']&&!keys['ArrowRight']) pl.roll*=Math.pow(0.02,dt);
+  if(!keys['KeyW']&&!keys['KeyS']&&!keys['ArrowUp']&&!keys['ArrowDown'])    pl.pitch*=Math.pow(0.05,dt);
+
+  pl.yaw+=pl.roll*0.4*dt;
+  const pr=pl.pitch*Math.PI/180, yr=pl.yaw*Math.PI/180;
+  pl.x+=Math.sin(yr)*Math.cos(pr)*pl.speed*dt;
+  pl.z+=Math.cos(yr)*Math.cos(pr)*pl.speed*dt;
+  pl.y+=Math.sin(pr)*pl.speed*dt;
+  if(pl.pitch>-15) pl.y-=2*dt;
+  if(pl.y<20){pl.y=20;pl.pitch=Math.max(0,pl.pitch);}
+  if(pl.y>5000) pl.y=5000;
+
+  clouds.forEach(c=>{
+    if(c.x-pl.x>10000) c.x-=20000; if(c.x-pl.x<-10000) c.x+=20000;
+    if(c.z-pl.z>10000) c.z-=20000; if(c.z-pl.z<-10000) c.z+=20000;
+  });
+}
+
+function updateHUD(){
+  document.getElementById('hspd').textContent=Math.round(pl.speed);
+  document.getElementById('halt').textContent=Math.round(pl.y);
+  document.getElementById('hpitch').textContent=Math.round(pl.pitch)+'°';
+  document.getElementById('hroll').textContent=Math.round(pl.roll)+'°';
+  document.getElementById('alt-fill').style.height=Math.min(100,(pl.y/5000)*100)+'%';
+  document.getElementById('spd-fill').style.height=Math.min(100,((pl.speed-80)/370)*100)+'%';
+  document.getElementById('warning').style.display=pl.y<80?'block':'none';
+}
+
+let lastTime=0;
+function loop(ts){
+  if(!gameRunning) return;
+  const dt=Math.min((ts-lastTime)/1000,0.05);
+  lastTime=ts; time+=dt;
+  updatePhysics(dt);
+  drawScene();
+  updateHUD();
+  requestAnimationFrame(loop);
+}
+
+function startGame(){
+  document.getElementById('title-screen').style.display='none';
+  gameRunning=true; initScene();
+  pl.y=400; pl.speed=200;
+  requestAnimationFrame(ts=>{lastTime=ts;loop(ts);});
+}
+</script>
 </body>
 </html>
